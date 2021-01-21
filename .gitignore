@@ -152,6 +152,10 @@ dataset/audiofiles/*
 
 # ignore ongoing work file
 /audio_rec.py
+/code2pdf.py
+
+# pdf code file
+*.pdf
 
 ### VisualStudioCode ###
 .vscode/*

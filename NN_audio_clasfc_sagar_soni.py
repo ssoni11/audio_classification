@@ -7,6 +7,23 @@ Created on Thu Jan 21 03:00:36 2021
 
 ###############################################################################
 ###############################################################################
+#########################     PROJECT DEFINITION      #########################
+###############################################################################
+###############################################################################
+
+#   The code writtern here uses neural network to train and to prepare classification 
+#   model on audio waveform. The raw audio file data is utilized for more than 30 
+#   different types of voice ranging from living being voice to the instrumental voice.
+#   The reason behind using neural network is due to ease of transfer learning (utilizing 
+#   the weight produced on each layer except the last layer) to utilize it on other sequential 
+#   or convolutional neural network. Other phase of the project, which is still under
+#   work, is to develop classification model using convolutional neural network. For
+#   developing neural raw data and spectogram has been derived from these audio file (more than 9000)
+#   will be used to create convolutional network. Having one output tensor of each 
+#   input tensor sequential model is used. Scikit-Learn API used for 
+
+###############################################################################
+###############################################################################
 ###########################     IMPORT LIBRARIES      #########################
 ###############################################################################
 ###############################################################################
@@ -19,8 +36,6 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler, OneHotEncoder
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-import numpy as np
-import pandas as pd
 from sklearn.model_selection import GridSearchCV
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
@@ -34,11 +49,12 @@ from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 
 #@staticmethod
+
 '''
-    ##########################################################################
-    prepared_dataset() will generate a CSV file features and labels both
-    short explaination for each of the feature has been added.
-    ##########################################################################
+##########################################################################
+ prepared_dataset() will generate a CSV file features and labels both
+ short explaination for each of the feature has been added.
+##########################################################################
 '''
 
 def prepared_dataset(audiofeature_path, validated_training_data_path):
@@ -77,13 +93,13 @@ def prepared_dataset(audiofeature_path, validated_training_data_path):
 
 #@staticmethod
 # create csv file header
-'''
-    ###################################################################
-    create_dataset_file() will generate a CSV file to store the fetures and 
-    label you use for the model.
-    ###################################################################
-'''
 
+    '''
+    ###################################################################
+    #   create_dataset_file() will generate a CSV file to store the fetures and 
+    #   label you use for the model.
+    ###################################################################
+    '''
 def create_dataset_file(audiofeature_path):
     
     
@@ -103,19 +119,19 @@ def create_dataset_file(audiofeature_path):
     return file # empty dataframe return
 
 #@staticmethod
-'''
+    '''
     ###################################################################
     extract_features() will generate a CSV file to store the fetures and 
     label you use for the model.
     short explaination for each of the feature has been added.
     ###################################################################
-'''
+    '''
 
 def extract_features(audiofeature_path, audiofile_path):
     
-    '''
-        create dataset csv file
-    '''
+    
+    # create dataset csv file
+    
     header = 'filename chroma_stft rmse spectral_centroid spectral_bandwidth rolloff zero_crossing_rate'
     for i in range(1, 21):
         header += f' mfcc{i}'
@@ -127,49 +143,45 @@ def extract_features(audiofeature_path, audiofile_path):
         writer = csv.writer(file)
         writer.writerow(header)
     
-    '''
-        extract feature to CSV file
-    '''
+    
+    # extract feature to CSV file
+    
     for filename in (os.listdir(audiofile_path)):
         
-        '''
-        audiofile : load audio file
-        '''
+        
+        # audiofile : load audio file
+        
         audiofile = f'dataset/audiofiles/{filename}'
         
-        '''
-        Load an audio file as a floating point time series
-        mono signal loading upto 30seconds
-        '''
+        # Load an audio file as a floating point time series
+        # mono signal loading upto 30seconds
+        
         y, sr = librosa.load(audiofile, mono=True, duration=30)
         
         # RMS energy of each frame from audio 'y'
-        '''
-            Compute root-mean-square (RMS) energy for each frame, either from the
+        
+        '''Compute root-mean-square (RMS) energy for each frame, either from the
             audio samples `y` or from a spectrogram `S`.
     
             Computing the energy from audio samples is faster as it doesn't require a
             STFT calculation. However, using a spectrogram will give a more accurate
             representation of energy over time because its frames can be windowed,
-            thus prefer using `S` if it's already available.
-        '''
+            thus prefer using `S` if it's already available.'''
         rmse = librosa.feature.rms(y=y)
         
         # chromagram from a waveform
         chroma_stft = librosa.feature.chroma_stft(y=y, sr=sr)
         
         # spectral centroid
-        '''
-            Each frame of a magnitude spectrogram is normalized and treated as a
+        
+        '''Each frame of a magnitude spectrogram is normalized and treated as a
             distribution over frequency bins, from which the mean (centroid) is
-            extracted per frame.
-        '''
+            extracted per frame.'''
         spec_cent = librosa.feature.spectral_centroid(y=y, sr=sr)
         
         # compute p'th-order spectral bandwidth:
-        '''
-            (sum_k S[k] * (freq[k] - centroid)**p)**(1/p)
-        '''
+        
+        '''(sum_k S[k] * (freq[k] - centroid)**p)**(1/p)'''
         spec_bw = librosa.feature.spectral_bandwidth(y=y, sr=sr)
         
         # compute rolloff frequency
@@ -191,9 +203,8 @@ def extract_features(audiofeature_path, audiofile_path):
             writer = csv.writer(file)
             writer.writerow(to_append.split())
     
-    '''
-    pull the data in DataFrame format
-    '''
+    
+    #   pull the data in DataFrame format
     file = pd.read_csv(audiofeature_path)
         
     return file # return the dataframe
@@ -262,43 +273,36 @@ def create_model(n_features:int, init:str):
     
     # Build the ANN
     
-    '''
-    Initialization the ANN
-    '''
+    # Initialization the ANN
+    
     ann = tf.keras.models.Sequential()
-    '''
-    Describe the topography of the model by calling the tf.keras.layers.Dense
-    method once for each layer. We've specified the following arguments:
+    
+    '''Describe the topography of the model by calling the tf.keras.layers.Dense
+       method once for each layer. We've specified the following arguments:
         * units specifies the number of nodes in this layer.
         * activation specifies the activation function (Rectified Linear Unit).
-        * name is just a string that can be useful when debugging.
-    '''
-    '''
-    Adding the input layer and define the first hidden layer with 20 nodes.
-    '''
+        * name is just a string that can be useful when debugging.'''
+    
+    
+    # Adding the input layer and define the first hidden layer with 20 nodes.
     ann.add(tf.keras.layers.Dense(units=20, kernel_initializer=init ,activation='relu', input_shape=(n_features,), name='Hidden1'))
-    '''
-    Adding the second hidden layer with 20 nodes.
-    '''
+    
+    # Adding the second hidden layer with 20 nodes.
     ann.add(tf.keras.layers.Dense(units=20, kernel_initializer=init,activation='relu', name='Hidden2'))
-    '''
-    Adding the third hidden layer with 20 nodes.
-    '''
+    
+    # Adding the third hidden layer with 20 nodes.
     ann.add(tf.keras.layers.Dense(units=20, kernel_initializer=init,activation='relu', name='Hidden3'))
-    '''
-    Adding the output layer.
-    '''
+    
+    # Adding the output layer.
     ann.add(tf.keras.layers.Dense(units=41, kernel_initializer=init,activation='softmax', name='Output'))
-    '''
-    compiling the ANN
-    '''
+    
+    # compiling the ANN
     ann.compile(loss='categorical_crossentropy', 
                  optimizer='adam', 
                  metrics=['acc']
                  )
-    '''
-    returns sequencial model
-    '''
+    
+    # returns sequencial model
     return ann
 
 
@@ -345,15 +349,8 @@ def train_model(x,
         Recording training loss values and metrics values at successive epochs.
         
     '''
-
-    #split dataset into features and label.
-    #features = {name:np.array(value) for name, value in dataset.items()}
-
-    #label = np.array(features.pop(label_name))
     
-    '''
-    fit compiled model to training samples
-    '''
+    #fit compiled model to training samples
     history = model.fit(x, 
                         y,  
                         epochs,
@@ -361,15 +358,12 @@ def train_model(x,
                         shuffle=True, 
                         validation_data=(x_test, y_test))
 
-    '''
-    Get details that will be useful for plotting the loss curve.
-    '''
+    
+    # Get details that will be useful for plotting the loss curve.
     History = history.history # dictionary
     epochs = history.epoch
     hist = pd.DataFrame(History)
-    '''
-    return history epochs and training loss and matrices values
-    '''
+    
     return hist # DataFrame
 
 
@@ -427,33 +421,26 @@ def model_tuning(x, y, model, x_test, y_test):
     '''
     Wrapper for using the Scikit-Learn API with Keras models.
     Implementation of the scikit-learn classifier API for Keras.
-    **KerasClassifer expects a build function, not the model instance itself, 
-    **which upon its call returns a compiled instance of a Keras model
+       **KerasClassifer expects a build function, not the model instance itself, 
+       **which upon its call returns a compiled instance of a Keras model
     '''
+    
     #keraswrapper = KerasClassifier(build_fn=model, verbose=1) # use it if model is already created in built in variable
     keraswrapper = KerasClassifier(build_fn=create_model, 
                                    n_features= x.shape[1], 
                                    init='glorot_uniform', verbose=1) # use it if model is not created in built in variable
     
-    '''
-    parameter grid : dictionary, parameter to be tuned for
-    '''
+    # parameter grid : dictionary, parameter to be tuned for
     param_grid = dict(epochs=epochs_list, batch_size=batch_size_list, init=initializers)
     
-    '''
-    loop through predefined parameters and fit the estimator (model) on training dataset
-    '''
+    # loop through predefined parameters and fit the estimator (model) on training dataset
     grid = GridSearchCV(estimator=keraswrapper, param_grid=param_grid, n_jobs=-1, cv=3)
     
-    #split dataset into features and label.
-    #features = {name:np.array(value) for name, value in dataset.items()
-    #label = np.array(features.pop(label_name))
-    
+    # fit the iterate on training data
     output_gridsearch = grid.fit(x, y)
     
-    '''
-    get mean_test_score for each params
-    '''
+    
+    # get mean_test_score for each params
     parameter_accuracy = pd.DataFrame(pd.concat([pd.DataFrame(output_gridsearch.cv_results_["params"]),
                             pd.DataFrame(output_gridsearch.cv_results_["mean_test_score"],
                             columns=["Accuracy"])],axis=1))
@@ -464,9 +451,7 @@ def model_tuning(x, y, model, x_test, y_test):
     
     bestParameters = output_gridsearch.best_params_
     
-    '''
-    call train_model function on the best parameters achieved through the GridSearch
-    '''
+    # call train_model function on the best parameters achieved through the GridSearch
     best_model = train_model(x, 
                              y, 
                              model, 
@@ -481,10 +466,7 @@ def model_tuning(x, y, model, x_test, y_test):
                         batch_size=bestParameters.get('batch_size'), epochs = bestParameters.get('epochs'),
                         shuffle=True)
     '''
-
-    '''
-    Get details that will be useful for plotting the loss curve.
-    '''
+    # Get details that will be useful for plotting the loss curve.
     
     '''
     epochs=history.epoch
@@ -500,33 +482,43 @@ def model_tuning(x, y, model, x_test, y_test):
 ###############################################################################
 ###############################################################################
 
-# Calling `save('my_model')` creates a SavedModel folder `my_model`.
-model.save("my_model")
 
-# It can be used to reconstruct the model identically.
-reconstructed_model = keras.models.load_model("my_model")
+def reconstructed_model(model):
+    
+    # Calling `save('my_model')` creates a SavedModel folder `my_model`.
+    model.save("my_model")
 
-# Presumably you would want to first load pre-trained weights.
-model.load_weights(...)
+    # It can be used to reconstruct the model identically.
+    reconstructed_model = tf.keras.models.load_model("my_model")
 
-# Freeze all layers except the last one.
-for layer in model.layers[:-1]:
-  layer.trainable = False
+    # Presumably you would want to first load pre-trained weights.
+    model.load_weights(...)
 
-# Recompile and train (this will only update the weights of the last layer).
-model.compile(...)
-model.fit(...)
+    # Freeze all layers except the last one.
+    for layer in model.layers[:-1]:
+        layer.trainable = False
+
+    # Recompile and train (this will only update the weights of the last layer).
+    model.compile(...)
+    model.fit(...)
 
 
+
+# At high level code execution take the location of main dataset.csv file and 
+# another train file to merge their validated labels. And the audiofile_path
+# requires you to provide path to the audio waveforms, and also provide help 
+# text if the user does not correctly pass the arguments. If you do not want to 
+# process audio file and instead would utilized dataset.csv (which is generated 
+# from audio waveform) please comment extract_feature() argument shown below.
 
 
 if __name__ == '__main__':
-    
     audiofeature_path = input("Enter the path to \"dataset.csv\" file i.e. folder_name/file_name.csv :: ")
     validated_training_data_path = input("Enter the path to the validated data file \"training.csv\" i.e. folder_name/file_name.csv :: ")
     audiofile_path = input("Enter the path to audiofiles \"dataset/audiofiles\" i.e. folder_name/folder_name :: ")
     
-    #create and extract features to dataset file
+    #create and extract features to dataset file. Comment it you do not want to create
+    #new dataset file for audio waveform
     dataset = extract_features(audiofeature_path, audiofile_path)
     
     #call dataset
@@ -536,7 +528,7 @@ if __name__ == '__main__':
     model = create_model(x_train.shape[1], 'glorot_uniform')
     
     #train model on training set
-    #model_training = modelselection.train_model(x_train, y_train, model, x_test, y_test, epochs=60, batch_size=50)
+    model_training = modelselection.train_model(x_train, y_train, model, x_test, y_test, epochs=60, batch_size=50)
     
     #tuning the model
     tuningOfModel = model_tuning(x_train, y_train, model, x_test, y_test)
